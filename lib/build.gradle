@@ -40,6 +40,17 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    buildFeatures {
+        prefabPublishing true
+    }
+
+    prefab {
+        bypassRestriction {
+            headers "src/main/cpp/include"
+        }
+    }
+
 }
 
 dependencies {

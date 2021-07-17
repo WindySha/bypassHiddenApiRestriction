@@ -1,12 +1,8 @@
 package com.wind.hiddenapi.bypass;
 
-import androidx.annotation.Keep;
-
 /**
  * @author WindySha (https://github.com/WindySha)
- * @date 2021/7/10.
  */
-@Keep
 public class HiddenApiBypass {
     static {
         System.loadLibrary("bypassRestriction");
@@ -23,6 +19,5 @@ public class HiddenApiBypass {
      *                          signature of a blacklisted API. All matching APIs are treated as if they were on
      *                          the whitelist: access permitted, and no logging..
      */
-    @Keep
     public static native void setHiddenApiExemptions(String[] signaturePrefixes);
 }

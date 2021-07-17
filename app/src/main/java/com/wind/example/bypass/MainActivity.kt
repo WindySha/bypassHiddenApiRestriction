@@ -7,6 +7,10 @@ import android.view.View
 import com.wind.hiddenapi.bypass.HiddenApiBypass
 
 class MainActivity : AppCompatActivity() {
+    init {
+        System.loadLibrary("test-lib")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -25,5 +29,13 @@ class MainActivity : AppCompatActivity() {
                 " clazz = $clazz   exem_method= $method"
             )
         }
+        if (view.id == R.id.bypass_dlfcn_test) {
+            testBypassDlfcn()
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        private external fun  testBypassDlfcn()
     }
 }

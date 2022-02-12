@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import com.wind.hiddenapi.bypass.HiddenApiBypass
+import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
     init {
@@ -21,13 +22,19 @@ class MainActivity : AppCompatActivity() {
             HiddenApiBypass.startBypass()
         }
         if (view.id == R.id.bypass_test) {
-            val clazz = Class.forName("dalvik.system.VMRuntime")
-            val method =
-                clazz.getDeclaredMethod("setHiddenApiExemptions", Array<String>::class.java)
-            Log.e(
-                "MainActivity",
-                " clazz = $clazz   exem_method= $method"
-            )
+            try {
+                // api_level >= 29
+                // $ adb shell settings delete global hidden_api_policy
+                val clazz = Class.forName("dalvik.system.VMRuntime")
+                val method =
+                    clazz.getDeclaredMethod("setHiddenApiExemptions", Array<String>::class.java)
+                Log.e(
+                    "MainActivity",
+                    " clazz = $clazz   exem_method= $method"
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
         if (view.id == R.id.bypass_dlfcn_test) {
             testBypassDlfcn()

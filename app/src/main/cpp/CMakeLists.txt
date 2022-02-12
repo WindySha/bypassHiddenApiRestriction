@@ -7,15 +7,15 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 
 
 # import lib from local-project
-#string(TOLOWER ${CMAKE_BUILD_TYPE} BUILD_TYPE_DIRNAME)
-#set(LIB_BASE ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bypassRestriction)
-#add_library(bypassRestriction::bypassRestriction SHARED IMPORTED)
-#set_target_properties(bypassRestriction::bypassRestriction PROPERTIES
-#        IMPORTED_LOCATION ${LIB_BASE}/build/intermediates/stripped_native_libs/${BUILD_TYPE_DIRNAME}/out/lib/${ANDROID_ABI}/libbypassRestriction.so
-#        INTERFACE_INCLUDE_DIRECTORIES ${LIB_BASE}/src/main/cpp/include)
+string(TOLOWER ${CMAKE_BUILD_TYPE} BUILD_TYPE_DIRNAME)
+set(LIB_BASE ${CMAKE_CURRENT_SOURCE_DIR}/../../../../bypassRestriction)
+add_library(bypassRestriction::bypassRestriction SHARED IMPORTED)
+set_target_properties(bypassRestriction::bypassRestriction PROPERTIES
+        IMPORTED_LOCATION ${LIB_BASE}/build/intermediates/stripped_native_libs/${BUILD_TYPE_DIRNAME}/out/lib/${ANDROID_ABI}/libbypassRestriction.so
+        INTERFACE_INCLUDE_DIRECTORIES ${LIB_BASE}/src/main/cpp/include)
 
 # import lib from maven
-find_package(bypassRestriction REQUIRED CONFIG)
+#find_package(bypassRestriction REQUIRED CONFIG)
 
 add_library(test-lib
         SHARED

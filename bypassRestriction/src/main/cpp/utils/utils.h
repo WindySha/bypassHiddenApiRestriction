@@ -4,16 +4,8 @@
 
 #pragma
 
-#include <android/log.h>
 #include <jni.h>
-
-#define ANDROID_P                       28
-#define ANDROID_Q                       29
-#define ANDROID_R                       30
-
-#define LOG_TAG  "Bypass_Restriction"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,  LOG_TAG, __VA_ARGS__)
+#include "common.h"
 
 #define CHECK_NOT_NULL_RETURN(__x)  \
     if (__x) {           \

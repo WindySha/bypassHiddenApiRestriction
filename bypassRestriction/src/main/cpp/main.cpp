@@ -8,9 +8,9 @@
 #include <android/api-level.h>
 #include <mutex>
 #include <dlfcn.h>
-#include <bypass_dlfcn.h>
 #include "utils/utils.h"
 #include "utils/ScopedLocalRef.h"
+#include "bypass_dlopen.h"
 
 static void *(*DecodeJObject)(void *, void *) = nullptr;
 static void *(*FindClassMethod)(void *, std::string_view, std::string_view, size_t) = nullptr;
@@ -36,23 +36,25 @@ static void EnsureInitialized() {
         return;
     }
 
-    void *art_so_handle = bp_dlopen("libart.so", RTLD_NOW);
+    void *art_so_handle = bypass_dlopen("libart.so", RTLD_NOW);
 
     const char *findClassMethod_name;
-    if (android_api_level == ANDROID_P) {
-        findClassMethod_name =
-            "_ZN3art6mirror5Class15FindClassMethodERKNS_11StringPieceES4_NS_11PointerSizeE";
-        void *address = bp_dlsym(art_so_handle, findClassMethod_name);
-        FindClassMethod_P = reinterpret_cast<decltype(FindClassMethod_P)>(address);
-    } else {
-        findClassMethod_name =
-            "_ZN3art6mirror5Class15FindClassMethodENSt3__117basic_string_viewIcNS2_11char_traitsIcEEEES6_NS_11PointerSizeE";
-        void *address = bp_dlsym(art_so_handle, findClassMethod_name);
-        FindClassMethod = reinterpret_cast<decltype(FindClassMethod)>(address);
+    if (art_so_handle != nullptr) {
+        if (android_api_level == ANDROID_P) {
+            findClassMethod_name =
+                    "_ZN3art6mirror5Class15FindClassMethodERKNS_11StringPieceES4_NS_11PointerSizeE";
+            void *address = dlsym(art_so_handle, findClassMethod_name);
+            FindClassMethod_P = reinterpret_cast<decltype(FindClassMethod_P)>(address);
+        } else {
+            findClassMethod_name =
+                    "_ZN3art6mirror5Class15FindClassMethodENSt3__117basic_string_viewIcNS2_11char_traitsIcEEEES6_NS_11PointerSizeE";
+            void *address = dlsym(art_so_handle, findClassMethod_name);
+            FindClassMethod = reinterpret_cast<decltype(FindClassMethod)>(address);
+        }
     }
 
     const char *decodeJObject_name = "_ZNK3art6Thread13DecodeJObjectEP8_jobject";
-    DecodeJObject = reinterpret_cast<decltype(DecodeJObject)>(bp_dlsym(
+    DecodeJObject = reinterpret_cast<decltype(DecodeJObject)>(dlsym(
         art_so_handle,
         decodeJObject_name));
 
@@ -83,12 +85,12 @@ static void *FindClassMethodCompat(void *mirrorClass,
 
     // If FindClassMethod is blocked by Google in the future, try to use FindDeclaredDirectMethodByName or FindDeclaredVirtualMethodByName
     // So, you know, the following code will not be executed at current time.
-    void *art_so_handle = bp_dlopen("libart.so", RTLD_NOW);
-    if (FindDeclaredDirectMethodByName == nullptr) {
+    void *art_so_handle = bypass_dlopen("libart.so", RTLD_NOW);
+    if (FindDeclaredDirectMethodByName == nullptr && art_so_handle != nullptr) {
         const char *FindDeclaredDirectMethodByName_sig =
             "_ZN3art6mirror5Class30FindDeclaredDirectMethodByNameENSt3__117basic_string_viewIcNS2_11char_traitsIcEEEENS_11PointerSizeE";
         FindDeclaredDirectMethodByName =
-            reinterpret_cast<decltype(FindDeclaredDirectMethodByName)>(bp_dlsym(art_so_handle,
+            reinterpret_cast<decltype(FindDeclaredDirectMethodByName)>(dlsym(art_so_handle,
                                                                                 FindDeclaredDirectMethodByName_sig));
     }
     if (FindDeclaredDirectMethodByName != nullptr) {
@@ -96,11 +98,11 @@ static void *FindClassMethodCompat(void *mirrorClass,
         CHECK_NOT_NULL_RETURN(art_method)
     }
 
-    if (FindDeclaredVirtualMethodByName == nullptr) {
+    if (FindDeclaredVirtualMethodByName == nullptr && art_so_handle != nullptr) {
         const char *FindDeclaredVirtualMethodByName_sig =
             "_ZN3art6mirror5Class31FindDeclaredVirtualMethodByNameENSt3__117basic_string_viewIcNS2_11char_traitsIcEEEENS_11PointerSizeE";
         FindDeclaredVirtualMethodByName =
-            reinterpret_cast<decltype(FindDeclaredVirtualMethodByName)>(bp_dlsym(art_so_handle,
+            reinterpret_cast<decltype(FindDeclaredVirtualMethodByName)>(dlsym(art_so_handle,
                                                                                  FindDeclaredVirtualMethodByName_sig));
     }
     if (FindDeclaredVirtualMethodByName != nullptr) {
@@ -146,6 +148,11 @@ Java_com_wind_hiddenapi_bypass_HiddenApiBypass_setHiddenApiExemptions(JNIEnv *en
         return;
     }
     EnsureInitialized();
+
+    if (DecodeJObject == nullptr) {
+        LOGE("DecodeJObject function is null !!!");
+        return;
+    }
 
     const char *VMRuntime_class_name = "dalvik/system/VMRuntime";
     ScopedLocalRef<jclass> vmRumtime_class(env, env->FindClass(VMRuntime_class_name));

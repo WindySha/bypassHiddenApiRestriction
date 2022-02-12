@@ -14,7 +14,7 @@ allprojects {
 ```
 ```
 dependencies {
-    implementation 'io.github.windysha:bypassHiddenApiRestriction:1.0.2'
+    implementation 'io.github.windysha:bypassHiddenApiRestriction:1.1.0'
 }
 ```
 ### 2. Add this code to your Application.attachBaseContext

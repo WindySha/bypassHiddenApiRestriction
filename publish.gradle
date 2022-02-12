@@ -5,7 +5,7 @@ ext {
     PUBLISH_GROUP_ID = 'io.github.windysha'
     PUBLISH_ARTIFACT_ID = 'bypassHiddenApiRestriction'
     PUBLISH_ARTIFACT_NAME = 'Android Hidden Api Bypass'
-    PUBLISH_VERSION_NAME = '1.0.2'
+    PUBLISH_VERSION_NAME = '1.1.0'
 
     POM_URL = 'https://github.com/WindySha/bypassHiddenApiRestriction'
     POM_DESCRIPTION = 'This is a library that can bypass the hidden api restriction on Android 9-12.'

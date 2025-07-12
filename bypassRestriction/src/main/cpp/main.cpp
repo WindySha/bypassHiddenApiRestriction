@@ -12,7 +12,9 @@
 #include "utils/ScopedLocalRef.h"
 #include "bypass_dlopen.h"
 
-static void *(*DecodeJObject)(void *, void *) = nullptr;
+static void *(*DecodeJObject)(void *, jobject) = nullptr;
+static void *(*Thread_DecodeGlobalJObject)(void *, jobject) = nullptr;
+static void *(*JavaVM_DecodeGlobalJObject)(void *, jobject) = nullptr;
 static void *(*FindClassMethod)(void *, std::string_view, std::string_view, size_t) = nullptr;
 static void *(*FindClassMethod_P)(void *,
                                   const bypass::StringPiece &,
@@ -57,6 +59,17 @@ static void EnsureInitialized() {
     DecodeJObject = reinterpret_cast<decltype(DecodeJObject)>(dlsym(
         art_so_handle,
         decodeJObject_name));
+
+    if (!DecodeJObject) {
+        Thread_DecodeGlobalJObject = reinterpret_cast<decltype(Thread_DecodeGlobalJObject)>(dlsym(
+                art_so_handle,
+                "_ZNK3art6Thread19DecodeGlobalJObjectEP8_jobject"));
+    }
+    if (!Thread_DecodeGlobalJObject) {
+        JavaVM_DecodeGlobalJObject = reinterpret_cast<decltype(JavaVM_DecodeGlobalJObject)>(dlsym(
+                art_so_handle,
+                "_ZN3art9JavaVMExt12DecodeGlobalEPv"));
+    }
 
     g_has_inited = true;
 }
@@ -138,6 +151,31 @@ static void *GetCurrentThread(JNIEnv *env) {
     return mirrorEnv->self_;
 }
 
+static void *Compat_DecodeJObject(JNIEnv *env, void* current_thread, jobject obj) {
+    if (DecodeJObject) {
+        return DecodeJObject(current_thread, obj);
+    }
+    if (env == nullptr) {
+        return nullptr;
+    }
+    if (!Thread_DecodeGlobalJObject && !JavaVM_DecodeGlobalJObject) {
+        LOGE("Cannot DecodeJobject !!!");
+        return nullptr;
+    }
+
+    jobject globalObj = env->NewGlobalRef(obj);
+    void *jobj = nullptr;
+    if (Thread_DecodeGlobalJObject) {
+        jobj = Thread_DecodeGlobalJObject(current_thread, globalObj);
+    } else if (JavaVM_DecodeGlobalJObject){
+        JavaVM *vm = nullptr;
+        env->GetJavaVM(&vm);
+        jobj = JavaVM_DecodeGlobalJObject(vm, globalObj);
+    }
+    env->DeleteGlobalRef(globalObj);
+    return jobj;
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_wind_hiddenapi_bypass_HiddenApiBypass_setHiddenApiExemptions(JNIEnv *env,
@@ -149,11 +187,6 @@ Java_com_wind_hiddenapi_bypass_HiddenApiBypass_setHiddenApiExemptions(JNIEnv *en
     }
     EnsureInitialized();
 
-    if (DecodeJObject == nullptr) {
-        LOGE("DecodeJObject function is null !!!");
-        return;
-    }
-
     const char *VMRuntime_class_name = "dalvik/system/VMRuntime";
     ScopedLocalRef<jclass> vmRumtime_class(env, env->FindClass(VMRuntime_class_name));
     if (!JNIExceptionClearAndDescribe(env, "Find VMRuntime class failed !!!", "")) {
@@ -161,7 +194,7 @@ Java_com_wind_hiddenapi_bypass_HiddenApiBypass_setHiddenApiExemptions(JNIEnv *en
     }
 
     auto current_thread = GetCurrentThread(env);
-    void *VMRuntime_mirror_class_obj = DecodeJObject(current_thread, vmRumtime_class.get());
+    void *VMRuntime_mirror_class_obj = Compat_DecodeJObject(env, current_thread, vmRumtime_class.get());
     if (VMRuntime_mirror_class_obj == nullptr) {
         LOGE("Decode VMRuntime jclass to mirror::class failed !!!");
         return;

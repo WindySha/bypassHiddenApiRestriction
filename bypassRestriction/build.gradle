@@ -5,12 +5,12 @@ plugins {
 apply from: '../publish.gradle'
 
 android {
-    compileSdk 30
+    compileSdk 34
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        minSdk 14
-        targetSdk 30
+        minSdk 21
+        targetSdk 33
 
         consumerProguardFiles "consumer-rules.pro"
         externalNativeBuild {
@@ -33,7 +33,7 @@ android {
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
-            version "3.10.2"
+            version "4.0.3"
         }
     }
     compileOptions {
@@ -50,6 +50,7 @@ android {
             headers "src/main/cpp/include"
         }
     }
+    namespace 'com.wind.hiddenapi.bypass'
 
 }
 

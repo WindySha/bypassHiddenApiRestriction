@@ -5,7 +5,7 @@ ext {
     PUBLISH_GROUP_ID = 'io.github.windysha'
     PUBLISH_ARTIFACT_ID = 'bypassHiddenApiRestriction'
     PUBLISH_ARTIFACT_NAME = 'Android Hidden Api Bypass'
-    PUBLISH_VERSION_NAME = '1.1.0'
+    PUBLISH_VERSION_NAME = '1.2.0'
 
     POM_URL = 'https://github.com/WindySha/bypassHiddenApiRestriction'
     POM_DESCRIPTION = 'This is a library that can bypass the hidden api restriction on Android 9-12.'
@@ -49,6 +49,7 @@ if (secretPropsFile.exists()) {
 } else {
     println "No props file, loading env vars"
 }
+
 publishing {
     publications {
         release(MavenPublication) {
@@ -110,19 +111,74 @@ publishing {
     }
     repositories {
         maven {
-            name = "mavenCentral"
-            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            name = "ossrh-staging-api"
+            url = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
+//            url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 
-            // The username and password we've fetched earlier
+//
+//            // The username and password we've fetched earlier
+//            credentials {
+//                username ossrhUsername
+//                password ossrhPassword
+//            }
             credentials {
-                username ossrhUsername
-                password ossrhPassword
+                username "kb/pNImX"
+                password "4/uANsd+urUwbvZjoMF9r8OXdP3SXHflLHvOaO1aO5M/"
             }
+//            url "https://central.sonatype.com/api/v1/publisher/upload/"
+//            url "https://central.sonatype.com/api/v1/publisher/deployments/download/"
+
+//            credentials(HttpHeaderCredentials)
+//            authentication {
+//                header(HttpHeaderAuthentication)
+//            }
         }
     }
 }
 signing {
     sign publishing.publications
 }
+
+task generateChecksums {
+    doLast {
+        def localRepoPath = new File(System.getProperty("user.home"), ".m2/repository")
+
+        def groupPath = project.group.replace('.', '/')
+        def artifactPath = new File(localRepoPath, "io/github/windysha/bypassHiddenApiRestriction/1.2.0/")
+        println "Generating checksums in: $artifactPath"
+
+        artifactPath.listFiles(new FilenameFilter() {
+            boolean accept(File dir, String name) {
+                return !name.endsWith(".md5") && !name.endsWith(".sha1")
+            }
+        }).each { file ->
+            // generate md5
+//            def md5 = file.bytes.digest("MD5").encodeHex().toString()
+//            new File(file.absolutePath + ".md5").text = md5
+//
+//            // generate sha1
+//            def sha1 = file.bytes.digest("SHA-1").encodeHex().toString()
+//            new File(file.absolutePath + ".sha1").text = sha1
+
+            def md5 = toHexString(digest(file.bytes, "MD5"))
+            new File(file.absolutePath + ".md5").text = md5
+
+            def sha1 = toHexString(digest(file.bytes, "SHA-1"))
+            new File(file.absolutePath + ".sha1").text = sha1
+        }
+    }
+}
+
+String toHexString(byte[] bytes) {
+    bytes.collect { String.format("%02x", it) }.join()
+}
+
+byte[] digest(byte[] input, String algorithm) {
+    return java.security.MessageDigest.getInstance(algorithm).digest(input)
+}
+
+publishToMavenLocal.dependsOn generateChecksums
+
+
 //  https://s01.oss.sonatype.org/#stagingRepositories
 // publish dst: https://repo.maven.apache.org/maven2/io/github/windysha/bypassHiddenApiRestriction/1.0.2/
